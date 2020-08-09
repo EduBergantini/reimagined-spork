@@ -11,7 +11,7 @@ class CustomUserAdmin(BaseUserAdmin):
         (None, {"fields": ("email", "password")}),
         (gettext("Personal Info"), {"fields": ("name",)}),
         (
-            gettext("Permissions"), 
+            gettext("Permissions"),
             {"fields": ("is_active", "is_staff", "is_superuser")}
         ),
         (gettext("Important dates"), {"fields": ("last_login",)})

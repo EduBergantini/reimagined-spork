@@ -9,4 +9,20 @@ services:
         volumes: 
             - ./app:/app
         command: >
-            sh -c "python manage.py 0.0.0.0:8000"
+            sh -c " python manage.py wait_for_db &&
+                    python manage.py migrate &&
+                    python manage.py runserver 0.0.0.0:8000"
+        environment: 
+            - DB_HOST=pgdb
+            - DB_NAME=superapp
+            - DB_USER=postgres
+            - DB_PASS=awesome-password
+        depends_on: 
+            - pgdb
+
+    pgdb:
+        image: postgres:13-alpine
+        environment: 
+            - POSTGRES_DB=superapp
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=awesome-password
