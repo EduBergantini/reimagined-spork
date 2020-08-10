@@ -25,3 +25,4 @@ class CustomUserAdmin(BaseUserAdmin):
 
 
 admin.site.register(models.User, CustomUserAdmin)
+admin.site.register(models.Tag)
