@@ -41,9 +41,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    def _params_to_int(self, qs):
+        """Convert a comma delimited string to a list of integers"""
+        return [int(str_id) for str_id in qs.split(",")]
+
     def get_queryset(self):
         """Retireve recipes filtered by the user"""
-        return self.queryset.filter(user=self.request.user).order_by("-id")
+        tags = self.request.query_params.get("tags")
+        ingredients = self.request.query_params.get("ingredients")
+        queryset = self.queryset
+        if tags:
+            tag_id_list = self._params_to_int(tags)
+            queryset = queryset.filter(tags__id__in=tag_id_list)
+        if ingredients:
+            ingredient_id_list = self._params_to_int(ingredients)
+            queryset = queryset.filter(ingredients__id__in=ingredient_id_list)
+
+        return queryset.filter(user=self.request.user).order_by("-id")
 
     def get_serializer_class(self):
         """Return the correct serializer for the action"""

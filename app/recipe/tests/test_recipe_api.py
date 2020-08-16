@@ -204,6 +204,53 @@ class PrivateRecipeApiTests(TestCase):
         tags = recipe.tags.all()
         self.assertEqual(len(tags), 0)
 
+    def filter_recipe_by_tags(self):
+        """test filtering recipes by tags"""
+        recipe1 = create_recipe(user=self.user, title="Recipe 1")
+        tag1 = create_tag(user=self.user, name="Tag 1")
+        recipe1.tags.add(tag1)
+        recipe2 = create_recipe(user=self.user, title="Recipe 2")
+        tag2 = create_tag(user=self.user, name="Tag 2")
+        recipe2.tags.add(tag2)
+        recipe3 = create_recipe(user=self.user, title="Recipe 3")
+
+        response = self.client.get(
+            RECIPES_URL,
+            {"tags": f"{tag1.id},{tag2.id}"}
+        )
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
+        self.assertIn(serializer1.data, response.data)
+        self.assertIn(serializer2.data, response.data)
+        self.assertNotIn(serializer3.data, response.data)
+
+    def test_filtering_recipes_by_ingredients(self):
+        """Test Filtering Recipes by Ingredients"""
+        recipe1 = create_recipe(user=self.user, title="Recipe 1")
+        ingredient1 = create_ingredient(self.user, name="Ingredient 1")
+        recipe1.ingredients.add(ingredient1)
+        serializer1 = RecipeSerializer(recipe1)
+
+        recipe2 = create_recipe(user=self.user, title="Recipe 2")
+        ingredient2 = create_ingredient(self.user, name="Ingredient 2")
+        recipe2.ingredients.add(ingredient2)
+        serializer2 = RecipeSerializer(recipe2)
+
+        recipe3 = create_recipe(user=self.user, title="Recipe 3")
+        serializer3 = RecipeSerializer(recipe3)
+
+        response = self.client.get(
+            RECIPES_URL,
+            {"ingredients": f"{ingredient1.id},{ingredient2.id}"}
+        )
+
+        self.assertIn(serializer1.data, response.data)
+        self.assertIn(serializer2.data, response.data)
+        self.assertNotIn(serializer3.data, response.data)
+
 
 class RecipeImageUploadTest(TestCase):
     """pass"""
