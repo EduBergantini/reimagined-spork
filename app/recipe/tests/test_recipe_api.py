@@ -83,7 +83,7 @@ class PrivateRecipeApiTests(TestCase):
         self.assertEqual(response.data, serializer.data)
 
     def test_recipes_limited_user(self):
-        """Test recipes belong to the authenticated user"""
+        """Test recipes belong to the authenticated user """
         user2 = get_user_model().objects.create_user(
             email="user2@mysimpleapplication.com",
             password="test2-password",
