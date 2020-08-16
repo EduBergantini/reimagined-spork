@@ -1,3 +1,7 @@
+import tempfile
+import os
+
+from PIL import Image
 from django.urls import reverse
 from django.test import TestCase
 from django.contrib.auth import get_user_model
@@ -7,6 +11,11 @@ from core.models import Recipe, Tag, Ingredient
 from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
 RECIPES_URL = reverse("recipe:recipe-list")
+
+
+def image_upload_url(recipe_id):
+    """return URL for recipe image upload"""
+    return reverse("recipe:recipe-upload-image", args=[recipe_id])
 
 
 def get_detail_url(recipe_id):
@@ -194,3 +203,41 @@ class PrivateRecipeApiTests(TestCase):
         self.assertEqual(recipe.price, payload["price"])
         tags = recipe.tags.all()
         self.assertEqual(len(tags), 0)
+
+
+class RecipeImageUploadTest(TestCase):
+    """pass"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="user@mysimpleapplication.com",
+            password="test-password",
+            name="User"
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe = create_recipe(user=self.user)
+
+    def tearDown(self):
+        self.recipe.image.delete()
+
+    def test_upload_image_to_recipe(self):
+        """Test uploading an image to the recipe"""
+        url = image_upload_url(self.recipe.id)
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as ntf:
+            img = Image.new("RGB", (10, 10))
+            img.save(ntf, format="JPEG")
+            ntf.seek(0)
+            rsp = self.client.post(url, {"image": ntf}, format="multipart")
+
+        self.recipe.refresh_from_db()
+        self.assertEqual(rsp.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn("image", rsp.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
+
+    def test_upload_image_bad_request(self):
+        """Test uploading invalid image"""
+        url = image_upload_url(self.recipe.id)
+        rsp = self.client.post(url, {"image": "no-image"}, format="multipart")
+
+        self.assertEqual(rsp.status_code, status.HTTP_400_BAD_REQUEST)
