@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "core",
     "user",
     "recipe",
+    "rest_framework_swagger",
 ]
 
 MIDDLEWARE = [
