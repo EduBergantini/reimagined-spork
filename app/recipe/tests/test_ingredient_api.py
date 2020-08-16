@@ -3,10 +3,19 @@ from django.urls import reverse
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
-from core.models import Ingredient
+from core.models import Ingredient, Recipe
 from recipe.serializers import IngredientSerializer
 
 INGREDIENTS_URL = reverse("recipe:ingredient-list")
+
+
+def create_recipe(user, title):
+    return Recipe.objects.create(
+        title=title,
+        time_minutes=10,
+        price=5.00,
+        user=user
+    )
 
 
 class PublicIngredientApiTests(TestCase):
@@ -83,3 +92,40 @@ class PrivateIngredientApiTests(TestCase):
         response = self.client.post(INGREDIENTS_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_retrieve_ingredients_assigned_to_recipe(self):
+        """Test Retrieving Ingredients that are assigned to recipes"""
+        ingredient1 = Ingredient.objects.create(
+            user=self.user,
+            name="Ingredient 1"
+        )
+        ingredient2 = Ingredient.objects.create(
+            user=self.user,
+            name="Ingredient 2"
+        )
+        recipe = create_recipe(self.user, "Recipe 1")
+        recipe.ingredients.add(ingredient1)
+
+        response = self.client.get(INGREDIENTS_URL, {"assigned_only": 1})
+
+        serializer1 = IngredientSerializer(ingredient1)
+        serializer2 = IngredientSerializer(ingredient2)
+        self.assertIn(serializer1.data, response.data)
+        self.assertNotIn(serializer2.data, response.data)
+
+    def test_retrieve_ingredients_assigned_unique(self):
+        """test filtering returns non duplicate assigned Ingredients"""
+        ingredient = Ingredient.objects.create(
+            user=self.user,
+            name="Ingredient 1"
+        )
+        Ingredient.objects.create(user=self.user, name="Ingredient 2")
+        recipe1 = create_recipe(self.user, "Recipe 1")
+        recipe1.ingredients.add(ingredient)
+
+        recipe2 = create_recipe(self.user, "Recipe 2")
+        recipe2.ingredients.add(ingredient)
+
+        response = self.client.get(INGREDIENTS_URL, {"assigned_only": 1})
+
+        self.assertEqual(len(response.data), 1)
